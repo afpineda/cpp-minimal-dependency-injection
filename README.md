@@ -137,7 +137,7 @@ classDiagram
       are instantiated with `getAllInstances()` and `getInstance()`.
 
 For examples of dependency injection calls,
-see [example1.cpp](./Examples/InjectionExample.cpp).
+see [InjectionExample.cpp](./Examples/InjectionExample.cpp).
 
 - Service providers can declare parameters in the class constructor.
   However, it is a good practice to declare a single parameterless constructor
