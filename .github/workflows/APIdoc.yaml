@@ -38,7 +38,6 @@ jobs:
       - name: Run D'oxygen
         uses: mattnotmitt/doxygen-action@v1.9.4
         with:
-          working-directory: '.'
           doxyfile-path: 'Doxyfile'
           # NOTE: output directory is configured in Doxyfile.
           # Should point to:
