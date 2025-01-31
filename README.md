@@ -102,7 +102,7 @@ classDiagram
         });
   ```
 
-- For convenience, there is **templated** `inject()` (overloaded) method able to
+- For convenience, there is a **templated** `inject()` (overloaded) method able to
   inject a service provider using one of its constructors (or the default).
   In the template parameters, you specify:
 
