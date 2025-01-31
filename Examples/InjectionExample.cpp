@@ -1,15 +1,36 @@
+/*
+ * @copyright Minimal Dependency Injection Framework for C++
+ *            © 2025 by Ángel Fernández Pineda. Madrid. Spain. 2025.
+ *            is licensed under Creative Commons Attribution 4.0 International
+ *
+ */
+
+// Utilities
 #include <iostream>
 #include <string>
-#include "../InternalServices.hpp"
 
+// Import the framework
+#include "../InternalServices.hpp"
 using namespace InternalServices;
 
+// Declare an abstract class as a self-managed service.
+// MyServiceInterface works as a dependency manager for itself.
 class SERVICE(MyServiceInterface)
 {
 public:
     virtual void doSomething() = 0;
 };
 
+// Declare a provider for the MyServiceInterface service
+// A service provider implements all abstract methods
+// from the service interface.
+//
+// For demonstration purposes, this provider
+// has constructor parameters, but a good practice
+// is to declare parameterless constructors.
+//
+// Instance creation/destruction is logged to evidence
+// lifetimes.
 class MyServiceProvider : public MyServiceInterface
 {
 public:
@@ -33,6 +54,11 @@ private:
     std::string data;
 };
 
+// A consumer of the MyServiceInterface service
+// for demonstration purposes.
+// A consumer class is not mandatory.
+// Any code calling getInstance() or getAllInstances()
+// is a service consumer.
 class MyConsumer
 {
 public:
@@ -48,12 +74,16 @@ public:
     }
 };
 
+// Example of a "constructor function" for MyServiceProvider.
+// This one creates a singleton instance for demonstration purposes,
+// since it is not strictly needed.
 std::shared_ptr<MyServiceProvider> global_constructor_function()
 {
     static auto instance = std::make_shared<MyServiceProvider>("global");
     return instance;
 }
 
+// Create two service consumers and use MyServiceInterface.
 void run(std::string header)
 {
     std::cout << std::endl
@@ -67,13 +97,18 @@ void run(std::string header)
     std::cout << "--" << std::endl;
 }
 
+// Main program
 int main()
 {
     std::cout << "-- main begin" << std::endl;
 
+    // First demonstration:
+    // Each consumer will get a different instance of the service provider
     MyServiceInterface::inject<MyServiceProvider, Lifetime::Transient>("transient");
     run("== Transient lifetime ==");
 
+    // Second demonstration:
+    // All consumers share the same instance of the service provider
     MyServiceInterface::clearInjectedInstancesForTesting();
     MyServiceInterface::inject<
         MyServiceProvider,
@@ -81,6 +116,9 @@ int main()
         ServiceConsumerMode::getInstance>("singleton");
     run("== Singleton lifetime ==");
 
+    // Third demonstration:
+    // A "constructor function" determines the lifetime of each instance
+    // of the service provider.
     MyServiceInterface::clearInjectedInstancesForTesting();
     MyServiceInterface::inject(
         global_constructor_function,

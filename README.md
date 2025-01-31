@@ -14,6 +14,8 @@ classDiagram
     CustomServiceInterface <|.. ServiceProvider: implements
 ```
 
+[Render this graph at mermaid.live](https://mermaid.live/view#pako:eNp9UDsOwjAMvUrkCSTEAaKKBRY2JDaUxUpciNTYVT5ICHp3QltgAi-2n5-fP3ew4gg02A5T2nk8RwyGVbURUduSsoQjxau3tOdMsUVL6j5xXtY0_g1vNhM8TO5Hb7NeqxncCqcSKGr10VCOemJHbG9qwaJe-y3_6z2-gocoV-9GwdB3FIhzghXUEQG9q3eOixvIl1ozoGvoqMXSZQOGh0rFkuV4Yws6x0IriFLOF9AtdqlmpXeYaf7Tm9Ijn0TCTBqek1N1pQ)
+
 instead of:
 
 ```mermaid
@@ -21,6 +23,8 @@ classDiagram
     direction RL
     ServiceConsumer ..> ServiceProvider: unwanted code dependency
 ```
+
+[Render this graph at mermaid.live](https://mermaid.live/view#pako:eNo9j88OwjAIxl-l4Wx8gB686FET426mF1LQNVlhYa3GLHt3u_iHC_DlxwfMEJUYPMQBp-mQ8G6Yg7gWlIxjSSrucvwoHdsjRd6rTDWzue1299POpo9EbN5VeaIUJrcaO-KRhVjiCzbQZjImatvm1TBA6TlzAN9K4hvWoQQIsjQUa9HuJRF8scobMK33HvwNh6l1dSQs_L32h4woV9X8h5hSUTt931vT8gZDGFJO)
 
 ## Pattern implementation (library design)
 
@@ -67,7 +71,7 @@ classDiagram
   - If necessary, you will have to write more custom code
     in order to inject the same service provider instance
     into all service interfaces.
-    See [Example3.cpp](./Examples/Example3.cpp).
+    See [MultipleInheritanceExample.cpp](./Examples/MultipleInheritanceExample.cpp).
 
 - The `DependencyManager<CustomServiceInterface>` type is a dependency
   manager for the `CustomServiceInterface` class:
@@ -133,7 +137,7 @@ classDiagram
       are instantiated with `getAllInstances()` and `getInstance()`.
 
 For examples of dependency injection calls,
-see [example1.cpp](./Examples/Example1.cpp).
+see [example1.cpp](./Examples/InjectionExample.cpp).
 
 - Service providers can declare parameters in the class constructor.
   However, it is a good practice to declare a single parameterless constructor
@@ -162,7 +166,7 @@ see [example1.cpp](./Examples/Example1.cpp).
 
 - Alternatively, you can declare a dependency manager for a set of services,
   but this is not mandatory either.
-  See [Example3.cpp](./Examples/Example3.cpp).
+  See [CustomDependencyManager.cpp](./Examples/CustomDependencyManager.cpp).
   Typically:
 
     ```c++
@@ -187,7 +191,7 @@ see [example1.cpp](./Examples/Example1.cpp).
 > [!CAUTION]
 > A service provider can obtain and use an instance of another service provider,
 > but this can lead to **circular references**. Be very careful.
-> See [Example4.cpp](./Examples/Example4.cpp)
+> See [InfiniteLoopExample.cpp](./Examples/InfiniteLoopExample.cpp)
 
 ### Use cases
 
@@ -211,7 +215,9 @@ sequenceDiagram
     ServiceConsumer ->> ServiceProvider: use
 ```
 
-See [Example1.cpp](./Examples/Example1.cpp).
+[Render this graph at mermaid.live](https://mermaid.live/view#pako:eNqFU8FqwzAM_RXjU8faH8ihl45BD4VCbyMX1VFajdjOFDkwSv99ypJuLE26nGLrvef3JHSxLhZoM9vgR8Lg8IXgxODzYPTbAYU9x-7CrNZrs0mNRH9AbsnhNghyCQ6zufuMwjs6WWxiaISTk8ivKbinXtwxgqCpgYUc1RDEDAodPnnkaRMjUDYI9eBRsSM8z9o-oWzVGWjsxWBqGvowPKdgRgl7rRA1XoWlmFjOt-4v0xSoJU8BGyNnpVOJQh47ie7c9AKm5thScWvRfCv3f3AP0o3wt66ayIZRmLDFxxoqsrqfjXITh2k3E7O6F9DHGMd8Q8GA9oDaziKI-jum3mwVHVSmBSY4VvjvQ795U4N2abXsgQpdiEvHza023WNuM_0tsIRUSW7zcFUoJImHz-BspvPDpeWYTmeblVA1ekp1od6GbbpBdDJvMfofEBak8Xb9Bn4v4vUL_CNIIQ)
+
+See [InjectionExample.cpp](./Examples/InjectionExample.cpp).
 
 #### For service consumers in need of all available service providers:
 
@@ -235,7 +241,9 @@ sequenceDiagram
     ServiceConsumer ->> ServiceProviderN: use
 ```
 
-See [Example2.cpp](./Examples/Example2.cpp).
+[Render this graph at mermaid.live](https://mermaid.live/view#pako:eNq1VE1rwzAM_SvCp45tgV1zGIx9QA8thd5GLpqttAbH7mQ7MEr_-5Q23UfW7OOwnGL76UnvSWirdDCkShXpOZPXdGdxxdhUHuSbofULDt0FXF5fw22OKTRL4tZqmvpEXKOmcuy-RGMmt8HHxFmnwA9XZ__DO-95NRMmgg1ystpu0Cfogzt0bohP5x-Ayp7oAB48dgHnoxWvKN04N5XSUMyMk76w0_BvtXP2gM6BftcZ4bObRVGccsEH8cBRnSDUo_T3qNcfuaHOXicbPBgSUGM9RUhrIbI1JdtQR9ad44EKNhxaa46Ojju_6HFXPzoxDDi2AaQ6psSWWvpttvlfs81PZ_ueRnguvw6PRGf20NLe18lQVlEMU5-NDtpXcimEad-Inl_aMmxJBCuzI0fbdoIwiZqnfJDmgkYHLbLFJ0c_Jv7QjBx_D5_v4epCyXuD1siC2XbBlZLKG6pUKb-GaswuVaryO4FiTmH54rUqZSTpQnHIq7Uqa3RRTnljREu_nY4Q6fxjCM0biIwVS2aHjbZfbLtXk_W_2A)
+
+See [ProviderSetExample.cpp](./Examples/ProviderSetExample.cpp).
 
 Other use cases are left to your imagination.
 
@@ -258,4 +266,4 @@ Only `DependencyManager<>::getInstance()` is available to retrieve a service pro
 `DependencyManager<>::inject()` requires just a service provider (as a template parameter)
 and the constructor parameters.
 
-See [Example5.cpp](./Examples/Example5.cpp).
+See [SingletonOptimizationExample.cpp](./Examples/SingletonOptimizationExample.cpp).
