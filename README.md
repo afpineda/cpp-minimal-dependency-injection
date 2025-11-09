@@ -7,14 +7,12 @@ pattern in C++, a technique for achieving
 
 ```mermaid
 classDiagram
-    class CustomServiceInterface {
+    class Service {
         <<interface>>
     }
-    CustomServiceInterface <.. ServiceConsumer: interface dependency (no code)
-    CustomServiceInterface <|.. ServiceProvider: implements
+    Service <.. ServiceConsumer: interface dependency (no code)
+    Service <|.. ServiceProvider: implements
 ```
-
-[Render this graph at mermaid.live](https://mermaid.live/view#pako:eNp9UDsOwjAMvUrkCSTEAaKKBRY2JDaUxUpciNTYVT5ICHp3QltgAi-2n5-fP3ew4gg02A5T2nk8RwyGVbURUduSsoQjxau3tOdMsUVL6j5xXtY0_g1vNhM8TO5Hb7NeqxncCqcSKGr10VCOemJHbG9qwaJe-y3_6z2-gocoV-9GwdB3FIhzghXUEQG9q3eOixvIl1ozoGvoqMXSZQOGh0rFkuV4Yws6x0IriFLOF9AtdqlmpXeYaf7Tm9Ijn0TCTBqek1N1pQ)
 
 instead of:
 
@@ -24,8 +22,6 @@ classDiagram
     ServiceConsumer ..> ServiceProvider: unwanted code dependency
 ```
 
-[Render this graph at mermaid.live](https://mermaid.live/view#pako:eNo9j88OwjAIxl-l4Wx8gB686FET426mF1LQNVlhYa3GLHt3u_iHC_DlxwfMEJUYPMQBp-mQ8G6Yg7gWlIxjSSrucvwoHdsjRd6rTDWzue1299POpo9EbN5VeaIUJrcaO-KRhVjiCzbQZjImatvm1TBA6TlzAN9K4hvWoQQIsjQUa9HuJRF8scobMK33HvwNh6l1dSQs_L32h4woV9X8h5hSUTt931vT8gZDGFJO)
-
 ## Pattern implementation (library design)
 
 - Dependency injection is not achieved by parameter passing,
@@ -33,53 +29,141 @@ classDiagram
   The dependency manager is static,
   so it is not necessary to pass it as a parameter either.
 
-- The library is declared within the `InternalServices` namespace.
+- The library is declared within the `dip` namespace.
   To import the library:
 
   ```c++
-  #include "InternalServices.hpp"
-  using namespace InternalServices;
+  #include "dip.hpp"
+  using namespace dip; // optional
   ```
 
 - There are no *interfaces* in C++.
-  The *custom service interface* should be declared as an
+  A *service* **must** be declared as an
   [**abstract class**](https://en.cppreference.com/w/cpp/language/abstract_class)
-  to avoid any code dependencies. However, this is not enforced.
+  having a [**virtual destructor**](https://www.geeksforgeeks.org/cpp/virtual-destructor/).
   For example:
 
   ```c++
-  class CustomServiceInterface
+  class CustomService
   {
     virtual void doSomething() = 0;
+    virtual ~CustomService() {};
   }
   ```
 
-- Service providers are implemented as descendants of service interfaces.
+- Service providers are implemented as non-abstract descendants of services.
   For example:
 
   ```c++
-  class CustomServiceProvider: public CustomServiceInterface
+  class CustomServiceProvider: public CustomService
   {
     virtual void doSomething() override { ... };
   }
   ```
 
-  A single service provider can implement multiple service interfaces
+  A single service provider may implement multiple services
   thanks to multiple inheritance, but this is **not recommended**:
 
   - Dependency injection becomes repetitive.
   - If necessary, you will have to write more custom code
     in order to inject the same service provider instance
-    into all service interfaces.
+    into all services.
     See [MultipleInheritanceExample.cpp](./Examples/MultipleInheritanceExample.cpp).
 
-- The `DependencyManager<CustomServiceInterface>` type is a dependency
-  manager for the `CustomServiceInterface` class:
+- There are three predefined **life cycles** for instances of a service provider:
 
-  - Allows one or more service providers to be injected into the given
-    `CustomServiceInterface`.
+  - *Transient:*
+    each service consumer gets a private instance of the service provider.
+    To inject a transient service provider use
+    `dip::inject_transient<Service,Provider>(constructor parameters)`.
 
-  - Retrives instances of the injected service providers for the service consumers.
+  - *Singleton:*
+    all service consumers share a single instance of the service provider.
+    To inject a singleton service provider use
+    `dip::inject_singleton<Service,Provider>(constructor parameters)`.
+
+  - *Thread singleton:*
+    all service consumers running in the same thread
+    share a single instance of the service provider.
+    Service consumers running in different threads will never share
+    the same instance of the service provider.
+    To inject a thread singleton service provider use
+    `dip::inject_thread_singleton<Service,Provider>(constructor parameters)`.
+
+- You can have any **custom lifecycle** by implementing
+  an *injector* (see below).
+
+- You must inject all the required dependencies at **program startup**.
+  An assertion will fail if a dependency is missing or injected twice.
+
+- *Service consumers* retrieve instances of a *service provider*
+  by declaring them: `dip::instance<Service> service_provider;`.
+  The lifecycle of the service provider instance is automatically handled
+  in a similar way to
+  [`std::unique_ptr`](https://en.cppreference.com/w/cpp/memory/unique_ptr.html),
+  but service provider instances are not moveable.
+
+- To make use of a *service provider* instance just call a (virtual) service method
+  using pointer syntax.
+  For example: `service_provider->doSomething();`.
+
+> [!CAUTION]
+> A service provider can consume instances of another service,
+> but this could lead to **circular references**. Be very careful.
+> See [InfiniteLoopExample.cpp](./Examples/InfiniteLoopExample.cpp)
+
+### Injectors
+
+An *injector* is an instance of `dip::Injector<Service>`
+having two `std::function` members:
+
+- `Service *retrieve()`:
+
+  - Retrieves a pointer to an instance of the service provider
+    whenever it is requested.
+  - Must not return `nullptr`.
+  - The injector should determine if the instance is to be created or not
+    and proceed accordingly.
+
+- `void forget(Service *instance)`
+
+  - Where `instance` is a pointer to an instance of the service
+    provider previously retrieved via `retrieve()`.
+    The injector should typecast this pointer to the service provider class.
+
+  - Called whenever an instance of the service provider is no longer needed.
+
+  - The injector should determine if the instance is to be destroyed or not
+    and proceed accordingly.
+
+To inject an injector (sorry for the redundancy) into a service:
+
+```c++
+   Injector<Service> my_injector
+   {
+      .retrieve = ...,
+      .forget = ...
+   };
+   instance<Service>::inject(my_injector);
+```
+
+Example applications:
+
+- Implementing a *single* service provider instance for *two or more* services
+  (the service provider having multiple inheritance).
+
+- Implementing a pool of service provider instances retrieved in round robin.
+
+---
+
+
+- The `instance<Service>` type is a dependency
+  manager for the `Service` class:
+
+  - Allows one service provider to be injected into the given
+    `Service`.
+
+  - Retrieves instances of the injected service providers for the service consumers.
 
   There is no need to create instances of each dependency manager,
   as all methods are
@@ -192,78 +276,3 @@ see [InjectionExample.cpp](./Examples/InjectionExample.cpp).
 > A service provider can obtain and use an instance of another service provider,
 > but this can lead to **circular references**. Be very careful.
 > See [InfiniteLoopExample.cpp](./Examples/InfiniteLoopExample.cpp)
-
-### Use cases
-
-These use cases assume that `CustomServiceInterface` is derived from
-`InternalServices::DependencyManager<CustomServiceInterface>`.
-
-#### For service consumers in need of just one service provider:
-
-```mermaid
-sequenceDiagram
-    MainProgram ->> CustomServiceInterface: CustomServiceInterface::inject(ConstructorFunc)
-    create participant ServiceConsumer
-    MainProgram ->> ServiceConsumer: create
-    ServiceConsumer ->>+ CustomServiceInterface: getInstance()
-    CustomServiceInterface ->> CustomServiceInterface: run ConstructorFunc
-    note left of CustomServiceInterface: ConstructorFunc determines the lifetime of the service provider
-    create participant ServiceProvider
-    CustomServiceInterface ->> ServiceProvider: create or retrieve
-    CustomServiceInterface -->>- ServiceConsumer: return ServiceProvider
-    ServiceConsumer ->> ServiceConsumer: store ServiceProvider in a private attribute or local variable
-    ServiceConsumer ->> ServiceProvider: use
-```
-
-[Render this graph at mermaid.live](https://mermaid.live/view#pako:eNqFU8FqwzAM_RXjU8faH8ihl45BD4VCbyMX1VFajdjOFDkwSv99ypJuLE26nGLrvef3JHSxLhZoM9vgR8Lg8IXgxODzYPTbAYU9x-7CrNZrs0mNRH9AbsnhNghyCQ6zufuMwjs6WWxiaISTk8ivKbinXtwxgqCpgYUc1RDEDAodPnnkaRMjUDYI9eBRsSM8z9o-oWzVGWjsxWBqGvowPKdgRgl7rRA1XoWlmFjOt-4v0xSoJU8BGyNnpVOJQh47ie7c9AKm5thScWvRfCv3f3AP0o3wt66ayIZRmLDFxxoqsrqfjXITh2k3E7O6F9DHGMd8Q8GA9oDaziKI-jum3mwVHVSmBSY4VvjvQ795U4N2abXsgQpdiEvHza023WNuM_0tsIRUSW7zcFUoJImHz-BspvPDpeWYTmeblVA1ekp1od6GbbpBdDJvMfofEBak8Xb9Bn4v4vUL_CNIIQ)
-
-See [InjectionExample.cpp](./Examples/InjectionExample.cpp).
-
-#### For service consumers in need of all available service providers:
-
-```mermaid
-sequenceDiagram
-    MainProgram ->> CustomServiceInterface: CustomServiceInterface::add(ConstructorF1)
-    MainProgram ->> CustomServiceInterface: CustomServiceInterface::add(ConstructorFN)
-    create participant ServiceConsumer
-    MainProgram ->> ServiceConsumer: create
-    ServiceConsumer ->>+ CustomServiceInterface: getAllInstances()
-    CustomServiceInterface ->> CustomServiceInterface: run all constructors (ConstructorF1...ConstructorFN)
-    note left of CustomServiceInterface: Each constructor function determines the lifetime of the service provider
-    create participant ServiceProvider1
-    CustomServiceInterface ->> ServiceProvider1: create or retrieve
-    create participant ServiceProviderN
-    CustomServiceInterface ->> ServiceProviderN: create or retrieve
-
-    CustomServiceInterface -->>- ServiceConsumer: return vector (ServiceProvider1..ServiceProviderN)
-    ServiceConsumer ->> ServiceConsumer: store the vector of service providers in a private attribute or local variable
-    ServiceConsumer ->> ServiceProvider1: use
-    ServiceConsumer ->> ServiceProviderN: use
-```
-
-[Render this graph at mermaid.live](https://mermaid.live/view#pako:eNq1VE1rwzAM_SvCp45tgV1zGIx9QA8thd5GLpqttAbH7mQ7MEr_-5Q23UfW7OOwnGL76UnvSWirdDCkShXpOZPXdGdxxdhUHuSbofULDt0FXF5fw22OKTRL4tZqmvpEXKOmcuy-RGMmt8HHxFmnwA9XZ__DO-95NRMmgg1ystpu0Cfogzt0bohP5x-Ayp7oAB48dgHnoxWvKN04N5XSUMyMk76w0_BvtXP2gM6BftcZ4bObRVGccsEH8cBRnSDUo_T3qNcfuaHOXicbPBgSUGM9RUhrIbI1JdtQR9ad44EKNhxaa46Ojju_6HFXPzoxDDi2AaQ6psSWWvpttvlfs81PZ_ueRnguvw6PRGf20NLe18lQVlEMU5-NDtpXcimEad-Inl_aMmxJBCuzI0fbdoIwiZqnfJDmgkYHLbLFJ0c_Jv7QjBx_D5_v4epCyXuD1siC2XbBlZLKG6pUKb-GaswuVaryO4FiTmH54rUqZSTpQnHIq7Uqa3RRTnljREu_nY4Q6fxjCM0biIwVS2aHjbZfbLtXk_W_2A)
-
-See [ProviderSetExample.cpp](./Examples/ProviderSetExample.cpp).
-
-Other use cases are left to your imagination.
-
-## Optimization
-
-For the use case where:
-
-- All service providers are singleton instances.
-- All service consumers require just one service provider.
-
-An optimized library is available.
-Use the `SingletonServices` namespace instead of `InternalServices`.
-
-```c++
-#include "InternalServices.hpp"
-using namespace SingletonServices;
-```
-
-Only `DependencyManager<>::getInstance()` is available to retrieve a service provider.
-`DependencyManager<>::inject()` requires just a service provider (as a template parameter)
-and the constructor parameters.
-
-See [SingletonOptimizationExample.cpp](./Examples/SingletonOptimizationExample.cpp).
