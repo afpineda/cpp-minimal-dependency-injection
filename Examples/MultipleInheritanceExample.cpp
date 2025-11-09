@@ -60,12 +60,12 @@ void test()
 struct CustomInjector
 {
     inline static MyServiceProvider singleton;
-    inline static dip::Injector<MyService1> service1_injector{
+    inline static dip::Injector<MyService1> service1{
         .retrieve = []() -> MyService1 *
         {
             return &singleton;
         }};
-    inline static dip::Injector<MyService2> service2_injector{
+    inline static dip::Injector<MyService2> service2{
         .retrieve = []() -> MyService2 *
         {
             return &singleton;
@@ -76,8 +76,8 @@ int main()
 {
     // Inject
     CustomInjector injector;
-    dip::inject<MyService1, MyServiceProvider>(injector.service1_injector);
-    dip::inject<MyService2, MyServiceProvider>(injector.service2_injector);
+    dip::inject<MyService1>(injector.service1);
+    dip::inject<MyService2>(injector.service2);
 
     // Consume both services
     test();

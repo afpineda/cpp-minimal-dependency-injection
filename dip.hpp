@@ -117,15 +117,12 @@ namespace dip
         instance &operator=(instance &&) = delete;
 
         /**
-         * @brief Inject a service provider with custom life cycle
+         * @brief Inject a service provider using a custom injector
          *
-         * @tparam Provider Service provider
          * @param injector Service injector
          */
-        template <class Provider>
         static void inject(const Injector<Service> &injector) noexcept
         {
-            static_assert(std::is_base_of<Service, Provider>::value, "Provider does not implement Service");
             assert((_injector.retrieve == nullptr) && (_injector.forget == nullptr) && "Dependency already injected");
             assert(injector.retrieve && "Invalid injector");
             _injector = injector;
@@ -212,17 +209,15 @@ namespace dip
     };
 
     /**
-     * @brief Inject a transient instance to a Service
+     * @brief Inject a service provider using a custom injector
      *
      * @tparam Service Injectable service
-     * @tparam Provider Service provider
-     * @tparam _Args Constructor argument types
-     * @param args Constructor arguments
+     *  @param injector Service injector
      */
-    template <class Service, class Provider>
+    template <class Service>
     inline void inject(const Injector<Service> &injector)
     {
-        instance<Service>::template inject<Provider>(injector);
+        instance<Service>::inject(injector);
     }
 
     /**
