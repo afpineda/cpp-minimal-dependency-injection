@@ -10,33 +10,32 @@
 #include <string>
 
 // Import the framework
-#include "../InternalServices.hpp"
-using namespace InternalServices;
+#include "../dip.hpp"
 
-// Declare an abstract class as a self-managed service.
-// MyServiceInterface works as a dependency manager for itself.
-class SERVICE(MyServiceInterface)
+// Declare a service as an abstract class
+class MyService
 {
 public:
-    virtual void doSomething() = 0;
+    virtual void foo() = 0;
+
+    // A virtual destructor is required
+    virtual ~MyService() {};
 };
 
-// Declare a provider for the MyServiceInterface service
-// A service provider implements all abstract methods
-// from the service interface.
+// Declare a service provider.
+// A service provider implements all abstract methods from the service.
 //
 // For demonstration purposes, this provider
 // has constructor parameters, but a good practice
 // is to declare parameterless constructors.
 //
-// Instance creation/destruction is logged to evidence
-// lifetimes.
-class MyServiceProvider : public MyServiceInterface
+// Instance creation/destruction is logged to evidence the life cycle.
+class MyServiceProvider : public MyService
 {
 public:
-    virtual void doSomething() override
+    virtual void foo() override
     {
-        std::cout << this << ".doSomething(" << data << ")" << std::endl;
+        std::cout << this << ".foo(" << data << ")" << std::endl;
     };
 
     MyServiceProvider(std::string param)
@@ -54,76 +53,27 @@ private:
     std::string data;
 };
 
-// A consumer of the MyServiceInterface service
-// for demonstration purposes.
-// A consumer class is not mandatory.
-// Any code calling getInstance() or getAllInstances()
-// is a service consumer.
-class MyConsumer
+// Consume two instances of the service
+void test(const std::string &msg)
 {
-public:
-    MyServiceInterface::Provider service1;
-    MyConsumer()
-    {
-        service1 = MyServiceInterface::getInstance();
-    }
-
-    void runService()
-    {
-        service1->doSomething();
-    }
-};
-
-// Example of a "constructor function" for MyServiceProvider.
-// This one creates a singleton instance for demonstration purposes,
-// since it is not strictly needed.
-std::shared_ptr<MyServiceProvider> global_constructor_function()
-{
-    static auto instance = std::make_shared<MyServiceProvider>("global");
-    return instance;
-}
-
-// Create two service consumers and use MyServiceInterface.
-void run(std::string header)
-{
-    std::cout << std::endl
-              << header << std::endl
-              << std::endl;
-    MyConsumer consumer1, consumer2;
-    std::cout << "-- consumer1.runService():" << std::endl;
-    consumer1.runService();
-    std::cout << "-- consumer2.runService():" << std::endl;
-    consumer2.runService();
-    std::cout << "--" << std::endl;
+    std::cout << msg << std::endl;
+    dip::instance<MyService> i1, i2;
+    i1->foo();
+    i2->foo();
 }
 
 // Main program
 int main()
 {
-    std::cout << "-- main begin" << std::endl;
 
     // First demonstration:
     // Each consumer will get a different instance of the service provider
-    MyServiceInterface::inject<MyServiceProvider, Lifetime::Transient>("transient");
-    run("== Transient lifetime ==");
+    dip::inject_transient<MyService,MyServiceProvider>("transient");
+    test("== Transient lifetime ==");
+    dip::instance<MyService>::clear_injection();
 
     // Second demonstration:
     // All consumers share the same instance of the service provider
-    MyServiceInterface::clearInjectedInstancesForTesting();
-    MyServiceInterface::inject<
-        MyServiceProvider,
-        Lifetime::Singleton,
-        ServiceConsumerMode::getInstance>("singleton");
-    run("== Singleton lifetime ==");
-
-    // Third demonstration:
-    // A "constructor function" determines the lifetime of each instance
-    // of the service provider.
-    MyServiceInterface::clearInjectedInstancesForTesting();
-    MyServiceInterface::inject(
-        global_constructor_function,
-        ServiceConsumerMode::getInstance);
-    run("== Singleton lifetime using a constructor function ==");
-
-    std::cout << "-- main end" << std::endl;
+    dip::inject_singleton<MyService,MyServiceProvider>("singleton");
+    test("== Singleton lifetime ==");
 }
