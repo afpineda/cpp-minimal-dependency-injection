@@ -1,5 +1,6 @@
 /**
  * @file dip.hpp
+ *
  * @author Ángel Fernández Pineda. Madrid. Spain.
  * @brief Minimal dependency injection framework
  * @date 2025-11-09
@@ -17,7 +18,7 @@
 #include <cassert>
 #include <functional>
 
-#include <iostream> // For testing
+// #include <iostream> // For testing
 
 /**
  * @brief Dependency injection pattern
@@ -88,11 +89,8 @@ namespace dip
          */
         ~instance() noexcept
         {
-            // std::cout << "destructor" << std::endl;
             if (_injector.forget)
                 _injector.forget(_instance);
-            // else
-            //  std::cout << "no hay" << std::endl;
         }
 
         /**
@@ -212,6 +210,20 @@ namespace dip
         service_type *_instance = nullptr;
         inline static Injector<Service> _injector;
     };
+
+    /**
+     * @brief Inject a transient instance to a Service
+     *
+     * @tparam Service Injectable service
+     * @tparam Provider Service provider
+     * @tparam _Args Constructor argument types
+     * @param args Constructor arguments
+     */
+    template <class Service, class Provider>
+    inline void inject(const Injector<Service> &injector)
+    {
+        instance<Service>::template inject<Provider>(injector);
+    }
 
     /**
      * @brief Inject a transient instance to a Service

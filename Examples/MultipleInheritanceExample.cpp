@@ -10,93 +10,75 @@
 #include <string>
 
 // Import the framework
-#include "../InternalServices.hpp"
-using namespace InternalServices;
+#include "../dip.hpp"
 
 // Declare an abstract class as a service.
-// This is not self-managed since we are
-// declaring a single custom dependency manager
-// for two services.
-class MyServiceInterface1
+class MyService1
 {
 public:
-    virtual void doSomething() = 0;
+    virtual void foo() = 0;
+    virtual ~MyService1() {};
 };
 
 // Declare another abstract class as another service.
-class MyServiceInterface2
+class MyService2
 {
 public:
-    virtual void doSomethingElse() = 0;
+    virtual void bar() = 0;
+    virtual ~MyService2() {};
 };
 
-// Declare a service provider for both
-// MyServiceInterface1 and MyServiceInterface2
+// Declare a single service provider for both services
 // thanks to multiple inheritance
 //
-// We want a singleton instance for **both**
-// services, not a singleton instance for each
-// service, so extra code is needed.
-class MyServiceProvider : public MyServiceInterface1,
-                          public MyServiceInterface2
+class MyServiceProvider : public MyService1,
+                          public MyService2
 {
 public:
-    virtual void doSomething() override
+    virtual void foo() override
     {
-        std::cout << this << ".doSomething()" << std::endl;
+        std::cout << this << ".foo()" << std::endl;
     }
 
-    virtual void doSomethingElse() override
+    virtual void bar() override
     {
-        std::cout << this << ".doSomethingElse()" << std::endl;
+        std::cout << this << ".bar()" << std::endl;
     }
+};
 
-    virtual ~MyServiceProvider() noexcept = default;
+// Consume both services
+void test()
+{
+    dip::instance<MyService1> i1;
+    dip::instance<MyService2> i2;
+    i1->foo();
+    i2->bar();
+}
 
-public:
-    // "Constructor functions" follow for both services
-    //
-    // **IMPORTANT**
-    // This example requires a c++20 compiler
-
-    // The managed singleton instance for MyServiceInterface1
-    static std::shared_ptr<MyServiceInterface1> getService1Singleton()
-    {
-        static_assert(__cplusplus >= 202002L, "C++20 is required for this example");
-        return std::static_pointer_cast<MyServiceInterface1, MyServiceProvider>(getSingleton());
-    }
-
-    // The managed singleton instance for MyServiceInterface2
-    static std::shared_ptr<MyServiceInterface2> getService2Singleton()
-    {
-        static_assert(__cplusplus >= 202002L, "C++20 is required for this example");
-        return std::static_pointer_cast<MyServiceInterface2, MyServiceProvider>(getSingleton());
-    }
-
-private:
-    // The  singleton instance
-    static std::shared_ptr<MyServiceProvider> getSingleton()
-    {
-        static auto singleton = std::make_shared<MyServiceProvider>();
-        return singleton;
-    }
+// Custom injector class for both services
+// using a singleton life cycle.
+struct CustomInjector
+{
+    inline static MyServiceProvider singleton;
+    inline static dip::Injector<MyService1> service1_injector{
+        .retrieve = []() -> MyService1 *
+        {
+            return &singleton;
+        }};
+    inline static dip::Injector<MyService2> service2_injector{
+        .retrieve = []() -> MyService2 *
+        {
+            return &singleton;
+        }};
 };
 
 int main()
 {
-    std::cout << "-- main begin" << std::endl;
+    // Inject
+    CustomInjector injector;
+    dip::inject<MyService1, MyServiceProvider>(injector.service1_injector);
+    dip::inject<MyService2, MyServiceProvider>(injector.service2_injector);
 
-    // Inject a dependency for each service
-    DependencyManager<MyServiceInterface1>::inject(MyServiceProvider::getService1Singleton);
-    DependencyManager<MyServiceInterface2>::inject(MyServiceProvider::getService2Singleton);
-
-    // Run both services.
-    // We are logging the instance address to evidence
-    // there is a singleton instance for both services.
-    auto service1 = DependencyManager<MyServiceInterface1>::getInstance();
-    auto service2 = DependencyManager<MyServiceInterface2>::getInstance();
-    service1->doSomething();
-    service2->doSomethingElse();
-
-    std::cout << "-- main end" << std::endl;
+    // Consume both services
+    test();
 }
