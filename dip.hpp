@@ -220,7 +220,7 @@ namespace dip
     /**
      * @brief Inject a service provider using a custom injector
      *
-     * @note To be consumed using std::instance<Service>
+     * @note To be consumed using dip::instance<Service>
      *
      * @tparam Service Injectable service
      * @param injector Service injector
@@ -234,7 +234,7 @@ namespace dip
     /**
      * @brief Inject a transient instance to a Service
      *
-     * @note To be consumed using std::instance<Service>
+     * @note To be consumed using dip::instance<Service>
      *
      * @tparam Service Injectable service
      * @tparam Provider Service provider
@@ -250,7 +250,7 @@ namespace dip
     /**
      * @brief Inject a singleton instance to a Service
      *
-     * @note To be consumed using std::instance<Service>
+     * @note To be consumed using dip::instance<Service>
      *
      * @tparam Service Injectable service
      * @tparam Provider Service provider
@@ -519,7 +519,7 @@ namespace dip
     /**
      * @brief Inject a service provider using a custom injector
      *
-     * @note To be consumed using std::instance_set<Service>
+     * @note To be consumed using dip::instance_set<Service>
      *
      * @tparam Service Injectable service
      *  @param injector Service injector
@@ -533,7 +533,7 @@ namespace dip
     /**
      * @brief Inject a transient instance to a Service
      *
-     * @note To be consumed using std::instance_set<Service>
+     * @note To be consumed using dip::instance_set<Service>
      *
      * @tparam Service Injectable service
      * @tparam Provider Service provider
@@ -549,7 +549,7 @@ namespace dip
     /**
      * @brief Inject a singleton instance to a Service
      *
-     * @note To be consumed using std::instance_set<Service>
+     * @note To be consumed using dip::instance_set<Service>
      *
      * @tparam Service Injectable service
      * @tparam Provider Service provider
@@ -565,7 +565,7 @@ namespace dip
     /**
      * @brief Inject a per-thread singleton instance to a Service
      *
-     * @note To be consumed using std::instance_set<Service>
+     * @note To be consumed using dip::instance_set<Service>
      *
      * @tparam Service Injectable service
      * @tparam Provider Service provider
