@@ -1,6 +1,6 @@
 # Minimal Dependency Injection Framework for C++
 
-This is a [**single file**](./InternalServices.hpp) library for implementing the
+This is a [**single file**](./dip.hpp) library for implementing the
 [*dependency injection*](https://www.geeksforgeeks.org/dependency-injectiondi-design-pattern/)
 pattern in C++, a technique for achieving
 [*dependency inversion*](https://en.wikipedia.org/wiki/Dependency_inversion_principle):
@@ -75,10 +75,12 @@ classDiagram
   - Service providers injected using `dip::inject*()` methods
     are consumed using `dip::instance<Service>`.
     Just **one** service provider can be injected and consumed.
+    See [InjectionExample.cpp](./Examples/InjectionExample.cpp).
 
   - Service providers injected using `dip::add*()` methods
     are consumed using `dip::instance_set<Service>`.
     Many service providers can be injected and consumed.
+    See [ProviderSetExample.cpp](./Examples/ProviderSetExample.cpp).
 
   - If you want to use both modes simultaneously (for the same service),
     you have to inject the service provider twice using
@@ -159,7 +161,7 @@ having two `std::function` members:
   - The injector should determine if the instance is to be destroyed or not
     and proceed accordingly.
 
-To inject an injector (sorry for the redundancy) into a service:
+To provide a custom injector for a service:
 
 ```c++
    Injector<Service> my_injector
@@ -167,12 +169,14 @@ To inject an injector (sorry for the redundancy) into a service:
       .acquire = ...,
       .release = ...
    };
-   instance<Service>::inject(my_injector);
+   dip::inject<Service>(my_injector);
+   dip::add<Service>(my_injector);
 ```
 
 Example applications:
 
 - Implementing a *single* service provider instance for *two or more* services
   (the service provider having multiple inheritance).
+  See [MultipleInheritanceExample.cpp](./Examples/MultipleInheritanceExample.cpp).
 
 - Implementing a pool of service provider instances retrieved in round robin.
