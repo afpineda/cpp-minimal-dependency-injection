@@ -39,39 +39,27 @@ namespace dip
          * @brief Type of a function able to retrieve instances
          *
          */
-        typedef std::function<Service *()> RetrieveFunction;
+        typedef std::function<Service *()> AcquireFunction;
 
         /**
          * @brief Type of a function able to remove unneeded instances
          *
          */
-        typedef std::function<void(Service *)> ForgetFunction;
+        typedef std::function<void(Service *)> ReleaseFunction;
 
         /**
          * @brief Custom function to retrieve instances
          *
          * @note Mandatory. Must return non-null.
          */
-        RetrieveFunction retrieve;
+        AcquireFunction acquire;
 
         /**
          * @brief Custom function to remove uneeded instances
          *
          * @note Optional
          */
-        ForgetFunction forget;
-
-        /**
-         * @brief Optional custom data
-         *
-         */
-        void *custom_data = nullptr;
-
-        /**
-         * @brief Optional custom data size
-         *
-         */
-        std::size_t custom_data_size = 0;
+        ReleaseFunction release;
     };
 
     /**
@@ -94,8 +82,8 @@ namespace dip
          */
         instance()
         {
-            assert(_injector.retrieve && "Missing dependency injection");
-            _instance = _injector.retrieve();
+            assert(_injector.acquire && "Missing dependency injection");
+            _instance = _injector.acquire();
             assert(_instance && "An injector retrieved a null provider");
         }
 
@@ -105,8 +93,8 @@ namespace dip
          */
         ~instance() noexcept
         {
-            if (_injector.forget)
-                _injector.forget(_instance);
+            if (_injector.release)
+                _injector.release(_instance);
         }
 
         /**
@@ -139,8 +127,8 @@ namespace dip
          */
         static void inject(const Injector<Service> &injector) noexcept
         {
-            assert((_injector.retrieve == nullptr) && (_injector.forget == nullptr) && "Dependency already injected");
-            assert(injector.retrieve && "Invalid injector");
+            assert((_injector.acquire == nullptr) && (_injector.release == nullptr) && "Dependency already injected");
+            assert(injector.acquire && "Invalid injector");
             _injector = injector;
         }
 
@@ -155,9 +143,9 @@ namespace dip
         static void inject_singleton(_Args &&...__args)
         {
             static_assert(std::is_base_of<Service, Provider>::value, "Provider does not implement Service");
-            assert((_injector.retrieve == nullptr) && (_injector.forget == nullptr) && "Dependency already injected");
-            _injector.forget = nullptr;
-            _injector.retrieve = [... args = std::forward<_Args>(__args)]() -> Service *
+            assert((_injector.acquire == nullptr) && (_injector.release == nullptr) && "Dependency already injected");
+            _injector.release = nullptr;
+            _injector.acquire = [... args = std::forward<_Args>(__args)]() -> Service *
             {
                 static Provider p(args...);
                 return &p;
@@ -175,9 +163,9 @@ namespace dip
         static void inject_thread_singleton(_Args &&...__args)
         {
             static_assert(std::is_base_of<Service, Provider>::value, "Provider does not implement Service");
-            assert((_injector.retrieve == nullptr) && (_injector.forget == nullptr) && "Dependency already injected");
-            _injector.forget = nullptr;
-            _injector.retrieve = [... args = std::forward<_Args>(__args)]() -> Service *
+            assert((_injector.acquire == nullptr) && (_injector.release == nullptr) && "Dependency already injected");
+            _injector.release = nullptr;
+            _injector.acquire = [... args = std::forward<_Args>(__args)]() -> Service *
             {
                 static thread_local Provider p(args...);
                 return &p;
@@ -195,12 +183,12 @@ namespace dip
         static void inject_transient(_Args &&...__args)
         {
             static_assert(std::is_base_of<Service, Provider>::value, "Provider does not implement Service");
-            assert((_injector.retrieve == nullptr) && (_injector.forget == nullptr) && "Dependency already injected");
-            _injector.retrieve = [... args = std::forward<_Args>(__args)]() -> Service *
+            assert((_injector.acquire == nullptr) && (_injector.release == nullptr) && "Dependency already injected");
+            _injector.acquire = [... args = std::forward<_Args>(__args)]() -> Service *
             {
                 return new Provider(args...);
             };
-            _injector.forget = [](Service *provider) -> void
+            _injector.release = [](Service *provider) -> void
             {
                 delete provider;
             };
@@ -215,8 +203,8 @@ namespace dip
          */
         static void clear_injection() noexcept
         {
-            _injector.retrieve = nullptr;
-            _injector.forget = nullptr;
+            _injector.acquire = nullptr;
+            _injector.release = nullptr;
         }
 
     private:
@@ -311,8 +299,8 @@ namespace dip
             assert(!_injectors.empty() && "No dependency injections");
             for (auto injector : _injectors)
             {
-                assert(injector.retrieve && "Missing dependency injection");
-                auto instance = injector.retrieve();
+                assert(injector.acquire && "Missing dependency injection");
+                auto instance = injector.acquire();
                 assert(instance && "An injector retrieved a null provider");
                 _instances.push_back(instance);
             }
@@ -325,8 +313,8 @@ namespace dip
         ~instance_set() noexcept
         {
             for (std::size_t i = 0; i < _injectors.size(); i++)
-                if (_injectors[i].forget)
-                    _injectors[i].forget(_instances.at(i));
+                if (_injectors[i].release)
+                    _injectors[i].release(_instances.at(i));
         }
 
         instance_set(const instance_set &&) = delete;
@@ -383,7 +371,7 @@ namespace dip
          */
         static void add(const Injector<Service> &injector) noexcept
         {
-            assert(injector.retrieve && "Invalid injector");
+            assert(injector.acquire && "Invalid injector");
             _injectors.push_back(injector);
         }
 
@@ -399,7 +387,7 @@ namespace dip
         {
             static_assert(std::is_base_of<Service, Provider>::value, "Provider does not implement Service");
             Injector<Service> injector{
-                .retrieve = [... args = std::forward<_Args>(__args)]() -> Service *
+                .acquire = [... args = std::forward<_Args>(__args)]() -> Service *
                 {
                     static Provider p(args...);
                     return &p;
@@ -419,7 +407,7 @@ namespace dip
         {
             static_assert(std::is_base_of<Service, Provider>::value, "Provider does not implement Service");
             Injector<Service> injector{
-                .retrieve = [... args = std::forward<_Args>(__args)]() -> Service *
+                .acquire = [... args = std::forward<_Args>(__args)]() -> Service *
                 {
                     static thread_local Provider p(args...);
                     return &p;
@@ -439,12 +427,12 @@ namespace dip
         {
             static_assert(std::is_base_of<Service, Provider>::value, "Provider does not implement Service");
             Injector<Service> injector{
-                .retrieve = [... args = std::forward<_Args>(__args)]() -> Service *
+                .acquire = [... args = std::forward<_Args>(__args)]() -> Service *
                 {
                     static thread_local Provider p(args...);
                     return &p;
                 },
-                .forget = [](Service *provider) -> void
+                .release = [](Service *provider) -> void
                 {
                     delete provider;
                 }};

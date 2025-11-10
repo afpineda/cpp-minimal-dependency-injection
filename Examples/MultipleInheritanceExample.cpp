@@ -61,12 +61,12 @@ struct CustomInjector
 {
     inline static MyServiceProvider singleton;
     inline static dip::Injector<MyService1> service1{
-        .retrieve = []() -> MyService1 *
+        .acquire = []() -> MyService1 *
         {
             return &singleton;
         }};
     inline static dip::Injector<MyService2> service2{
-        .retrieve = []() -> MyService2 *
+        .acquire = []() -> MyService2 *
         {
             return &singleton;
         }};
