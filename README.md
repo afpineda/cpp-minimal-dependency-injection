@@ -25,9 +25,7 @@ classDiagram
 ## Pattern implementation (library design)
 
 - Dependency injection is not achieved by parameter passing,
-  but by a dependency manager.
-  The dependency manager is static,
-  so it is not necessary to pass it as a parameter either.
+  but using C++ template semantics.
 
 - The library is declared within the `dip` namespace.
   To import the library:
@@ -121,7 +119,10 @@ classDiagram
   an assertion will fail if a dependency is injected twice.
 
 - *Service consumers* retrieve instances of a *service provider*
-  by declaring them: `dip::instance<Service> service_provider;`.
+  by declaring them. Depending on the consumption mode:
+  - `dip::instance<Service> service_provider;` or
+  - `dip::instance_set<Service> service_provider_set;`
+
   The lifecycle of the service provider instance is automatically handled
   in a similar way to
   [`std::unique_ptr`](https://en.cppreference.com/w/cpp/memory/unique_ptr.html),
@@ -129,7 +130,16 @@ classDiagram
 
 - To make use of a *service provider* instance just call a
   (virtual) service method using pointer syntax.
-  For example: `service_provider->doSomething();`.
+  For example:
+
+  ```c++
+  // First consumption mode
+  service_provider->doSomething();
+
+  // Second consumption mode
+  for (auto provider: service_provider_set)
+    provider->doSomething();
+  ```
 
 > [!CAUTION]
 > A service provider can consume instances of another service,
@@ -169,8 +179,8 @@ To provide a custom injector for a service:
       .acquire = ...,
       .release = ...
    };
-   dip::inject<Service>(my_injector);
-   dip::add<Service>(my_injector);
+   dip::inject<Service>(my_injector); // First consumption mode
+   dip::add<Service>(my_injector); // Second consumption mode
 ```
 
 Example applications:
@@ -180,3 +190,4 @@ Example applications:
   See [MultipleInheritanceExample.cpp](./Examples/MultipleInheritanceExample.cpp).
 
 - Implementing a pool of service provider instances retrieved in round robin.
+  See [RoundRobinExample.cpp](./Examples/RoundRobinExample.cpp).
