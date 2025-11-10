@@ -70,19 +70,47 @@ classDiagram
 
 - There are **two service consumption modes**:
 
-  - Service providers injected using `dip::inject*()` methods
-    are consumed using `dip::instance<Service>`.
-    Just **one** service provider can be injected and consumed.
-    See [InjectionExample.cpp](./Examples/InjectionExample.cpp).
+  1. Service providers injected using `dip::inject*()` methods
+     are consumed using `dip::instance<Service>`.
+     Just **one** service provider can be injected and consumed.
+     See [InjectionExample.cpp](./Examples/InjectionExample.cpp).
 
-  - Service providers injected using `dip::add*()` methods
-    are consumed using `dip::instance_set<Service>`.
-    Many service providers can be injected and consumed.
-    See [ProviderSetExample.cpp](./Examples/ProviderSetExample.cpp).
+  2. Service providers injected using `dip::add*()` methods
+     are consumed using `dip::instance_set<Service>`.
+     Many service providers can be injected and consumed.
+     See [ProviderSetExample.cpp](./Examples/ProviderSetExample.cpp).
 
-  - If you want to use both modes simultaneously (for the same service),
-    you have to inject the service provider twice using
-    `dip::inject*()` *and* `dip::add*()` methods.
+  If you want to use both modes simultaneously (for the same service),
+  you have to inject the service provider twice using
+  `dip::inject*()` *and* `dip::add*()` methods.
+
+- *Service consumers* retrieve instances of a *service provider*
+  by declaring them. Depending on the consumption mode:
+  - `dip::instance<Service> service_provider;` or
+  - `dip::instance_set<Service> service_provider_set;`
+
+  The lifecycle of the service provider instance is automatically handled
+  in a similar way to
+  [`std::unique_ptr`](https://en.cppreference.com/w/cpp/memory/unique_ptr.html),
+  but service provider instances are not moveable.
+
+- To make use of a *service provider* instance just call a
+  (virtual) service method using pointer syntax.
+  For example:
+
+  ```c++
+  // First consumption mode
+  service_provider->doSomething();
+
+  // Second consumption mode
+  for (auto provider: service_provider_set)
+    provider->doSomething();
+  ```
+
+- You must inject all the required dependencies at **program startup**.
+  An assertion will fail if a dependency is missing.
+  In the first consumption mode,
+  an assertion will fail if a dependency is injected twice.
 
 - There are three predefined **life cycles** for instances of a service provider:
 
@@ -113,34 +141,6 @@ classDiagram
 - You can have any **custom lifecycle** by implementing
   an *injector* (see below).
 
-- You must inject all the required dependencies at **program startup**.
-  An assertion will fail if a dependency is missing.
-  In the first consumption mode,
-  an assertion will fail if a dependency is injected twice.
-
-- *Service consumers* retrieve instances of a *service provider*
-  by declaring them. Depending on the consumption mode:
-  - `dip::instance<Service> service_provider;` or
-  - `dip::instance_set<Service> service_provider_set;`
-
-  The lifecycle of the service provider instance is automatically handled
-  in a similar way to
-  [`std::unique_ptr`](https://en.cppreference.com/w/cpp/memory/unique_ptr.html),
-  but service provider instances are not moveable.
-
-- To make use of a *service provider* instance just call a
-  (virtual) service method using pointer syntax.
-  For example:
-
-  ```c++
-  // First consumption mode
-  service_provider->doSomething();
-
-  // Second consumption mode
-  for (auto provider: service_provider_set)
-    provider->doSomething();
-  ```
-
 > [!CAUTION]
 > A service provider can consume instances of another service,
 > but this could lead to **circular references**. Be very careful.
@@ -153,7 +153,7 @@ having two `std::function` members:
 
 - `Service *acquire()`:
 
-  - Retrieves a pointer to an instance of the service provider
+  - Retrieves a raw pointer to an instance of the service provider
     whenever it is requested.
   - Must not return `nullptr`.
   - The injector should determine if the instance is to be created or not
@@ -161,7 +161,7 @@ having two `std::function` members:
 
 - `void release(Service *instance)`
 
-  - Where `instance` is a pointer to a service provider instance
+  - Where `instance` is a raw pointer to a service provider instance
     previously retrieved via `acquire()`.
     Note that this pointer is `Service *`, not `Provider *`.
     The injector should typecast this pointer to the service provider class.
