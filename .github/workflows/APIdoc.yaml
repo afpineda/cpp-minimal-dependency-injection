@@ -17,7 +17,8 @@ on:
     branches:
       - 'main'
     paths:
-      - 'dip.hpp'
+      - '**.hpp'
+      - 'Doxyfile'
   workflow_dispatch:
 
 jobs:
