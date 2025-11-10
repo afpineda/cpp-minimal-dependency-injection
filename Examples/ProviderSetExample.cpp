@@ -43,9 +43,9 @@ public:
 void test()
 {
     dip::instance_set<MyService> instance_set;
-    for (std::size_t i = 0; i < instance_set.size(); i++)
+    for (auto instance: instance_set)
     {
-        instance_set[i]->foo();
+        instance->foo();
     }
 }
 

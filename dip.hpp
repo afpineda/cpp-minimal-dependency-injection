@@ -50,14 +50,28 @@ namespace dip
         /**
          * @brief Custom function to retrieve instances
          *
+         * @note Mandatory. Must return non-null.
          */
         RetrieveFunction retrieve;
 
         /**
          * @brief Custom function to remove uneeded instances
          *
+         * @note Optional
          */
         ForgetFunction forget;
+
+        /**
+         * @brief Optional custom data
+         *
+         */
+        void *custom_data = nullptr;
+
+        /**
+         * @brief Optional custom data size
+         *
+         */
+        std::size_t custom_data_size = 0;
     };
 
     /**
@@ -71,7 +85,8 @@ namespace dip
         static_assert(std::is_abstract<Service>::value, "Only abstract classes are injectable");
         static_assert(std::has_virtual_destructor<Service>::value, "An injectable service must declare a virtual destructor");
 
-        typedef Service service_type;
+        typedef Service *service_type;
+        typedef const Service *const_service_type;
 
         /**
          * @brief Retrieve an instance providing the service
@@ -99,16 +114,16 @@ namespace dip
          *
          * @note Ownership is not transferred
          *
-         * @return service_type* Pointer to the service provider
+         * @return service_type Pointer to the service provider
          */
-        service_type *operator->() const noexcept { return _instance; }
+        service_type operator->() const noexcept { return _instance; }
 
         /**
          * @brief Get the instance providing the service
          *
          * @note Ownership is not transferred
          *
-         * @return service_type* Pointer to the service provider
+         * @return service_type Pointer to the service provider
          */
         service_type operator*() const noexcept { return _instance; }
 
@@ -205,7 +220,7 @@ namespace dip
         }
 
     private:
-        service_type *_instance = nullptr;
+        service_type _instance = nullptr;
         inline static Injector<Service> _injector;
     }; // struct instance
 
@@ -280,7 +295,12 @@ namespace dip
         static_assert(std::is_abstract<Service>::value, "Only abstract classes are injectable");
         static_assert(std::has_virtual_destructor<Service>::value, "An injectable service must declare a virtual destructor");
 
-        typedef Service service_type;
+        typedef Service *service_type;
+        typedef const Service *const_service_type;
+        using iterator = std::vector<service_type>::iterator;
+        using const_iterator = std::vector<service_type>::const_iterator;
+        using reverse_iterator = std::vector<service_type>::reverse_iterator;
+        using const_reverse_iterator = std::vector<service_type>::const_reverse_iterator;
 
         /**
          * @brief Retrieve a set of instances providing the service
@@ -324,25 +344,37 @@ namespace dip
             return _instances.size();
         }
 
-        service_type *operator[](std::size_t index)
+        service_type operator[](std::size_t index)
         {
             return _instances[index];
         }
 
-        const service_type *operator[](std::size_t index) const
+        const_service_type operator[](std::size_t index) const
         {
             return _instances[index];
         }
 
-        service_type *at(std::size_t index)
+        service_type at(std::size_t index)
         {
             return _instances.at(index);
         }
 
-        const service_type *at(std::size_t index) const
+        const_service_type at(std::size_t index) const
         {
             return _instances.at(index);
         }
+
+        iterator begin() { return _instances.begin(); }
+        const_iterator begin() const { return _instances.begin(); }
+        iterator end() { return _instances.end(); }
+        const_iterator end() const { return _instances.end(); }
+        const_iterator cend() const noexcept { return _instances.cend(); }
+        reverse_iterator rbegin() { return _instances.rbegin(); }
+        const_reverse_iterator rbegin() const { return _instances.rbegin(); }
+        const_reverse_iterator crbegin() const noexcept { return _instances.crbegin(); }
+        reverse_iterator rend() { return _instances.rend(); }
+        const_reverse_iterator rend() const { return _instances.rend(); }
+        const_reverse_iterator crend() const noexcept { return _instances.crend(); }
 
         /**
          * @brief Inject a service provider using a custom injector
@@ -406,8 +438,7 @@ namespace dip
         static void add_transient(_Args &&...__args)
         {
             static_assert(std::is_base_of<Service, Provider>::value, "Provider does not implement Service");
-            Injector<Service> injector
-            {
+            Injector<Service> injector{
                 .retrieve = [... args = std::forward<_Args>(__args)]() -> Service *
                 {
                     static thread_local Provider p(args...);
@@ -416,8 +447,7 @@ namespace dip
                 .forget = [](Service *provider) -> void
                 {
                     delete provider;
-                }
-            };
+                }};
             add(injector);
         }
 
@@ -434,7 +464,7 @@ namespace dip
         }
 
     private:
-        std::vector<service_type *> _instances;
+        std::vector<service_type> _instances;
         inline static std::vector<Injector<Service>> _injectors;
     }; // struct instances
 
@@ -499,5 +529,4 @@ namespace dip
     {
         instance_set<Service>::template add_thread_singleton<Provider>(std::forward<_Args>(args)...);
     }
-
 }; // namespace dip
