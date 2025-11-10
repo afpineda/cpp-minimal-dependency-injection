@@ -73,7 +73,10 @@ namespace dip
         static_assert(std::is_abstract<Service>::value, "Only abstract classes are injectable");
         static_assert(std::has_virtual_destructor<Service>::value, "An injectable service must declare a virtual destructor");
 
+        /// @brief Type of the injected instances
         typedef Service *service_type;
+
+        /// @brief Const type of the injected instances
         typedef const Service *const_service_type;
 
         /**
@@ -208,7 +211,9 @@ namespace dip
         }
 
     private:
+        /// @brief Injected instance
         service_type _instance = nullptr;
+        /// @brief Service provider injector
         inline static Injector<Service> _injector;
     }; // struct instance
 
@@ -283,11 +288,17 @@ namespace dip
         static_assert(std::is_abstract<Service>::value, "Only abstract classes are injectable");
         static_assert(std::has_virtual_destructor<Service>::value, "An injectable service must declare a virtual destructor");
 
+        /// @brief Type of the instances of the service provider
         typedef Service *service_type;
+        /// @brief Const type of the instances of the service provider
         typedef const Service *const_service_type;
+        /// @brief Forward iterator
         using iterator = std::vector<service_type>::iterator;
+        /// @brief Const forward iterator
         using const_iterator = std::vector<service_type>::const_iterator;
+        /// @brief Reverse iterator
         using reverse_iterator = std::vector<service_type>::reverse_iterator;
+        /// @brief Const reverse iterator
         using const_reverse_iterator = std::vector<service_type>::const_reverse_iterator;
 
         /**
@@ -332,36 +343,85 @@ namespace dip
             return _instances.size();
         }
 
+        /**
+         * @brief Get a service provider instance in the set
+         *
+         * @param index Index of the service provider instance
+         * @return service_type Service provider instance
+         */
         service_type operator[](std::size_t index)
         {
             return _instances[index];
         }
 
+        /**
+         * @brief Get a service provider instance in the set
+         *
+         * @param index Index of the service provider instance
+         * @return service_type Service provider instance
+         */
         const_service_type operator[](std::size_t index) const
         {
             return _instances[index];
         }
 
+        /**
+         * @brief Get a service provider instance in the set
+         *
+         * @param index Index of the service provider instance
+         * @return service_type Service provider instance
+         */
         service_type at(std::size_t index)
         {
             return _instances.at(index);
         }
 
+        /**
+         * @brief Get a service provider instance in the set
+         *
+         * @param index Index of the service provider instance
+         * @return service_type Service provider instance
+         */
         const_service_type at(std::size_t index) const
         {
             return _instances.at(index);
         }
 
+        /// @brief returns an iterator to the beginning
+        /// @return Iterator
         iterator begin() { return _instances.begin(); }
+        /// @brief returns an iterator to the beginning
+        /// @return Iterator
         const_iterator begin() const { return _instances.begin(); }
+        /// @brief returns an iterator to the end
+        /// @return Iterator
+        const_iterator cbegin() const noexcept { return _instances.begin(); }
+        /// @brief returns an iterator to the end
+        /// @return Iterator
         iterator end() { return _instances.end(); }
+        /// @brief returns an iterator to the end
+        /// @return Iterator
         const_iterator end() const { return _instances.end(); }
+        /// @brief returns an iterator to the end
+        /// @return Iterator
         const_iterator cend() const noexcept { return _instances.cend(); }
+        /// @brief returns a reverse iterator to the beginning
+        /// @return Iterator
         reverse_iterator rbegin() { return _instances.rbegin(); }
+        /// @brief returns a reverse iterator to the beginning
+        /// @return Iterator
         const_reverse_iterator rbegin() const { return _instances.rbegin(); }
+        /// @brief returns a reverse iterator to the beginning
+        /// @return Iterator
         const_reverse_iterator crbegin() const noexcept { return _instances.crbegin(); }
+        /// @brief returns a reverse iterator to the end
+        /// @return Iterator
         reverse_iterator rend() { return _instances.rend(); }
+        /// @brief returns a reverse iterator to the end
+        /// @return Iterator
         const_reverse_iterator rend() const { return _instances.rend(); }
+        /// @brief returns a reverse iterator to the end
+        /// @return Iterator
         const_reverse_iterator crend() const noexcept { return _instances.crend(); }
 
         /**
