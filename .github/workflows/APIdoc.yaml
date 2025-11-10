@@ -17,7 +17,7 @@ on:
     branches:
       - 'main'
     paths:
-      - 'InternalServices.hpp'
+      - 'dip.hpp'
   workflow_dispatch:
 
 jobs:
