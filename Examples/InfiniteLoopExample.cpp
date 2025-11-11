@@ -10,44 +10,50 @@
 #include <string>
 
 // Import the framework
-#include "../InternalServices.hpp"
-using namespace InternalServices;
+#include "../dip.hpp"
 
 // Declare a service
-class SERVICE(MyServiceInterface1)
+class MyService1
 {
 public:
-    virtual void doSomething() = 0;
+    virtual void foo() = 0;
+    virtual ~MyService1() {};
 };
 
 // Declare another service
-class SERVICE(MyServiceInterface2)
+
+class MyService2
 {
 public:
-    virtual void doSomethingElse() = 0;
+    virtual void bar() = 0;
+    virtual ~MyService2() {};
 };
 
-// Declare a service provider for MyServiceInterface1
-// This class uses MyServiceInterface2
-class MyServiceProvider1 : public MyServiceInterface1
+// Declare a service provider for MyService1
+// This class consumes MyService2
+// Let's pretend this code is not aware of MyServiceProvider2
+class MyServiceProvider1 : public MyService1
 {
 public:
-    virtual void doSomething() override
+    virtual void foo() override
     {
-        std::cout << this << ".MyServiceProvider1::doSomething()" << std::endl;
-        MyServiceInterface2::getInstance()->doSomethingElse();
+        std::cout << this << ".MyServiceProvider1::foo()" << std::endl;
+        dip::instance<MyService2> provider2;
+        provider2->bar();
     };
 };
 
-// Declare a service provider for MyServiceInterface2
-// This class uses MyServiceInterface1
-class MyServiceProvider2 : public MyServiceInterface2
+// Declare a service provider for MyService2
+// This class consumes MyService1
+// Let's pretend this code is not aware of MyServiceProvider1
+class MyServiceProvider2 : public MyService2
 {
 public:
-    virtual void doSomethingElse() override
+    virtual void bar() override
     {
-        std::cout << this << ".MyServiceProvider2::doSomethingElse()" << std::endl;
-        MyServiceInterface1::getInstance()->doSomething();
+        std::cout << this << ".MyServiceProvider2::bar()" << std::endl;
+        dip::instance<MyService1> provider1;
+        provider1->foo();
     };
 };
 
@@ -58,11 +64,12 @@ int main()
     // known being aware of that.
     std::cout << "-- This program will enter an infinite loop, ending in a stack overflow" << std::endl;
 
-    MyServiceInterface1::inject<MyServiceProvider1, Lifetime::Singleton>();
-    MyServiceInterface2::inject<MyServiceProvider2, Lifetime::Singleton>();
+    dip::inject_singleton<MyService1, MyServiceProvider1>();
+    dip::inject_singleton<MyService2, MyServiceProvider2>();
 
-    MyServiceInterface1::Provider service1 = MyServiceInterface1::getInstance();
-    service1->doSomething();
+    // Consume first service
+    dip::instance<MyService1> provider1;
+    provider1->foo();
 
     std::cout << "-- main end" << std::endl;
 }
