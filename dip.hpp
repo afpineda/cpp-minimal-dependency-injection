@@ -70,8 +70,12 @@ namespace dip
     template <class Service>
     struct instance
     {
-        static_assert(std::is_abstract<Service>::value, "Only abstract classes are injectable");
-        static_assert(std::has_virtual_destructor<Service>::value, "An injectable service must declare a virtual destructor");
+        static_assert(
+            std::is_abstract<Service>::value,
+            "Only abstract classes are injectable");
+        static_assert(
+            std::has_virtual_destructor<Service>::value,
+            "An injectable service must declare a virtual destructor");
 
         /// @brief Type of the injected instances
         typedef Service *service_type;
@@ -118,7 +122,7 @@ namespace dip
          */
         service_type operator*() const noexcept { return _instance; }
 
-        instance(const instance &&) = delete;
+        instance(const instance &) = delete;
         instance(instance &&) = delete;
         instance &operator=(const instance &) = delete;
         instance &operator=(instance &&) = delete;
@@ -130,7 +134,10 @@ namespace dip
          */
         static void inject(const Injector<Service> &injector) noexcept
         {
-            assert((_injector.acquire == nullptr) && (_injector.release == nullptr) && "Dependency already injected");
+            assert(
+                (_injector.acquire == nullptr) &&
+                (_injector.release == nullptr) &&
+                "Dependency already injected");
             assert(injector.acquire && "Invalid injector");
             _injector = injector;
         }
@@ -145,8 +152,13 @@ namespace dip
         template <class Provider, typename... _Args>
         static void inject_singleton(_Args &&...__args)
         {
-            static_assert(std::is_base_of<Service, Provider>::value, "Provider does not implement Service");
-            assert((_injector.acquire == nullptr) && (_injector.release == nullptr) && "Dependency already injected");
+            static_assert(
+                std::is_base_of<Service, Provider>::value,
+                "Provider does not implement Service");
+            assert(
+                (_injector.acquire == nullptr) &&
+                (_injector.release == nullptr) &&
+                "Dependency already injected");
             _injector.release = nullptr;
             _injector.acquire = [... args = std::forward<_Args>(__args)]() -> Service *
             {
@@ -165,8 +177,13 @@ namespace dip
         template <class Provider, typename... _Args>
         static void inject_thread_singleton(_Args &&...__args)
         {
-            static_assert(std::is_base_of<Service, Provider>::value, "Provider does not implement Service");
-            assert((_injector.acquire == nullptr) && (_injector.release == nullptr) && "Dependency already injected");
+            static_assert(
+                std::is_base_of<Service, Provider>::value,
+                "Provider does not implement Service");
+            assert(
+                (_injector.acquire == nullptr) &&
+                (_injector.release == nullptr) &&
+                "Dependency already injected");
             _injector.release = nullptr;
             _injector.acquire = [... args = std::forward<_Args>(__args)]() -> Service *
             {
@@ -185,9 +202,15 @@ namespace dip
         template <class Provider, typename... _Args>
         static void inject_transient(_Args &&...__args)
         {
-            static_assert(std::is_base_of<Service, Provider>::value, "Provider does not implement Service");
-            assert((_injector.acquire == nullptr) && (_injector.release == nullptr) && "Dependency already injected");
-            _injector.acquire = [... args = std::forward<_Args>(__args)]() -> Service *
+            static_assert(
+                std::is_base_of<Service, Provider>::value,
+                "Provider does not implement Service");
+            assert(
+                (_injector.acquire == nullptr) &&
+                (_injector.release == nullptr) &&
+                "Dependency already injected");
+            _injector.acquire =
+                [... args = std::forward<_Args>(__args)]() -> Service *
             {
                 return new Provider(args...);
             };
@@ -201,8 +224,8 @@ namespace dip
          * @brief Clear the injected dependency for testing purposes
          *
          * @warning Do not call in production code.
-         *          Will cause memory leaks if transient instances are not destroyed before calling.
-         *
+         *          Will cause memory leaks unless injected
+         *          instances are deleted first.
          */
         static void clear_injection() noexcept
         {
@@ -244,7 +267,8 @@ namespace dip
     template <class Service, class Provider, typename... _Args>
     inline void inject_transient(_Args &&...args)
     {
-        instance<Service>::template inject_transient<Provider>(std::forward<_Args>(args)...);
+        instance<Service>::template inject_transient<Provider>(
+            std::forward<_Args>(args)...);
     }
 
     /**
@@ -260,7 +284,8 @@ namespace dip
     template <class Service, class Provider, typename... _Args>
     inline void inject_singleton(_Args &&...args)
     {
-        instance<Service>::template inject_singleton<Provider>(std::forward<_Args>(args)...);
+        instance<Service>::template inject_singleton<Provider>(
+            std::forward<_Args>(args)...);
     }
 
     /**
@@ -274,7 +299,8 @@ namespace dip
     template <class Service, class Provider, typename... _Args>
     inline void inject_thread_singleton(_Args &&...args)
     {
-        instance<Service>::template inject_thread_singleton<Provider>(std::forward<_Args>(args)...);
+        instance<Service>::template inject_thread_singleton<Provider>(
+            std::forward<_Args>(args)...);
     }
 
     /**
@@ -285,8 +311,12 @@ namespace dip
     template <class Service>
     struct instance_set
     {
-        static_assert(std::is_abstract<Service>::value, "Only abstract classes are injectable");
-        static_assert(std::has_virtual_destructor<Service>::value, "An injectable service must declare a virtual destructor");
+        static_assert(
+            std::is_abstract<Service>::value,
+            "Only abstract classes are injectable");
+        static_assert(
+            std::has_virtual_destructor<Service>::value,
+            "An injectable service must declare a virtual destructor");
 
         /// @brief Type of the instances of the service provider
         typedef Service *service_type;
@@ -299,7 +329,8 @@ namespace dip
         /// @brief Reverse iterator
         using reverse_iterator = std::vector<service_type>::reverse_iterator;
         /// @brief Const reverse iterator
-        using const_reverse_iterator = std::vector<service_type>::const_reverse_iterator;
+        using const_reverse_iterator =
+            std::vector<service_type>::const_reverse_iterator;
 
         /**
          * @brief Retrieve a set of instances providing the service
@@ -328,7 +359,7 @@ namespace dip
                     _injectors[i].release(_instances.at(i));
         }
 
-        instance_set(const instance_set &&) = delete;
+        instance_set(const instance_set &) = delete;
         instance_set(instance_set &&) = delete;
         instance_set &operator=(const instance_set &) = delete;
         instance_set &operator=(instance_set &&) = delete;
@@ -413,7 +444,10 @@ namespace dip
         const_reverse_iterator rbegin() const { return _instances.rbegin(); }
         /// @brief returns a reverse iterator to the beginning
         /// @return Iterator
-        const_reverse_iterator crbegin() const noexcept { return _instances.crbegin(); }
+        const_reverse_iterator crbegin() const noexcept
+        {
+            return _instances.crbegin();
+        }
         /// @brief returns a reverse iterator to the end
         /// @return Iterator
         reverse_iterator rend() { return _instances.rend(); }
@@ -422,7 +456,10 @@ namespace dip
         const_reverse_iterator rend() const { return _instances.rend(); }
         /// @brief returns a reverse iterator to the end
         /// @return Iterator
-        const_reverse_iterator crend() const noexcept { return _instances.crend(); }
+        const_reverse_iterator crend() const noexcept
+        {
+            return _instances.crend();
+        }
 
         /**
          * @brief Inject a service provider using a custom injector
@@ -445,9 +482,12 @@ namespace dip
         template <class Provider, typename... _Args>
         static void add_singleton(_Args &&...__args)
         {
-            static_assert(std::is_base_of<Service, Provider>::value, "Provider does not implement Service");
+            static_assert(
+                std::is_base_of<Service, Provider>::value,
+                "Provider does not implement Service");
             Injector<Service> injector{
-                .acquire = [... args = std::forward<_Args>(__args)]() -> Service *
+                .acquire =
+                    [... args = std::forward<_Args>(__args)]() -> Service *
                 {
                     static Provider p(args...);
                     return &p;
@@ -465,9 +505,12 @@ namespace dip
         template <class Provider, typename... _Args>
         static void add_thread_singleton(_Args &&...__args)
         {
-            static_assert(std::is_base_of<Service, Provider>::value, "Provider does not implement Service");
+            static_assert(
+                std::is_base_of<Service, Provider>::value,
+                "Provider does not implement Service");
             Injector<Service> injector{
-                .acquire = [... args = std::forward<_Args>(__args)]() -> Service *
+                .acquire =
+                    [... args = std::forward<_Args>(__args)]() -> Service *
                 {
                     static thread_local Provider p(args...);
                     return &p;
@@ -485,9 +528,12 @@ namespace dip
         template <class Provider, typename... _Args>
         static void add_transient(_Args &&...__args)
         {
-            static_assert(std::is_base_of<Service, Provider>::value, "Provider does not implement Service");
+            static_assert(
+                std::is_base_of<Service, Provider>::value,
+                "Provider does not implement Service");
             Injector<Service> injector{
-                .acquire = [... args = std::forward<_Args>(__args)]() -> Service *
+                .acquire =
+                    [... args = std::forward<_Args>(__args)]() -> Service *
                 {
                     static thread_local Provider p(args...);
                     return &p;
@@ -503,7 +549,8 @@ namespace dip
          * @brief Clear all the injected dependencies for testing purposes
          *
          * @warning Do not call in production code.
-         *          Will cause memory leaks if transient instances are not destroyed before calling.
+         *          Will cause memory leaks unless injected instances
+         *          are deleted first.
          *
          */
         static void clear_injections() noexcept
@@ -543,7 +590,8 @@ namespace dip
     template <class Service, class Provider, typename... _Args>
     inline void add_transient(_Args &&...args)
     {
-        instance_set<Service>::template add_transient<Provider>(std::forward<_Args>(args)...);
+        instance_set<Service>::template add_transient<Provider>(
+            std::forward<_Args>(args)...);
     }
 
     /**
@@ -559,7 +607,8 @@ namespace dip
     template <class Service, class Provider, typename... _Args>
     inline void add_singleton(_Args &&...args)
     {
-        instance_set<Service>::template add_singleton<Provider>(std::forward<_Args>(args)...);
+        instance_set<Service>::template add_singleton<Provider>(
+            std::forward<_Args>(args)...);
     }
 
     /**
@@ -575,6 +624,7 @@ namespace dip
     template <class Service, class Provider, typename... _Args>
     inline void add_thread_singleton(_Args &&...args)
     {
-        instance_set<Service>::template add_thread_singleton<Provider>(std::forward<_Args>(args)...);
+        instance_set<Service>::template add_thread_singleton<Provider>(
+            std::forward<_Args>(args)...);
     }
 }; // namespace dip
