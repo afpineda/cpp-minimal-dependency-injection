@@ -59,7 +59,7 @@ void test(const std::string &msg)
     std::cout << msg << std::endl;
     dip::instance<MyService> i1, i2;
     i1->foo();
-    i2->foo();
+    (*i2).foo(); // Alternate syntax
 }
 
 // Main program
