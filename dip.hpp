@@ -107,16 +107,22 @@ namespace dip
          *
          * @return service_type Pointer to the service provider
          */
-        service_type operator->() const noexcept { return _instance; }
+        [[nodiscard]]
+        service_type operator->() const noexcept
+        {
+            return _instance;
+        }
 
         /**
          * @brief Get the instance providing the service
          *
-         * @note Ownership is not transferred
-         *
          * @return service_type Reference to the service provider
          */
-        Service &operator*() const noexcept { return *_instance; }
+        [[nodiscard]]
+        Service &operator*() const noexcept
+        {
+            return *_instance;
+        }
 
         instance(const instance &&) = delete;
         instance(instance &&) = delete;
